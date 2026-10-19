@@ -24,7 +24,6 @@ repositories {
     maven { url = "https://api.modrinth.com/maven" }
 
     //KubeJS
-
     maven {
         // saps.dev Maven (KubeJS and Rhino)
         url = "https://maven.saps.dev/minecraft"
@@ -84,7 +83,6 @@ neoForge {
     runs {
         client {
             client()
-
             systemProperty 'neoforge.enabledGameTestNamespaces', project.mod_id
         }
 
@@ -123,7 +121,10 @@ configurations {
     runtimeClasspath.extendsFrom localRuntime
 }
 
-var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {
+// =====================================================================
+// 【核心修复部分】使用 processResources 来处理 neoforge.mods.toml 的变量替换
+// =====================================================================
+tasks.named('processResources', ProcessResources).configure {
     var replaceProperties = [
             minecraft_version      : minecraft_version,
             minecraft_version_range: minecraft_version_range,
@@ -137,13 +138,13 @@ var generateModMetadata = tasks.register("generateModMetadata", ProcessResources
             mod_description        : mod_description,
     ]
     inputs.properties replaceProperties
-    expand replaceProperties
-    from "src/main/templates"
-    into "build/generated/sources/modMetadata"
-}
 
-sourceSets.main.resources.srcDir generateModMetadata
-neoForge.ideSyncTask generateModMetadata
+    // 匹配资源目录下的文件进行替换
+    filesMatching(['META-INF/neoforge.mods.toml', 'pack.mcmeta']) {
+        expand replaceProperties + [project: project]
+    }
+}
+// =====================================================================
 
 publishing {
     publications {
