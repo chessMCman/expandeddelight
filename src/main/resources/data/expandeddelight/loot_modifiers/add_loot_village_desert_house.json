@@ -7,5 +7,5 @@
       "loot_table_id": "minecraft:chests/village/village_desert_house"
     }
   ],
-  "lootTable": "expandeddelight:chests/village_desert_house"
+  "table": "expandeddelight:chests/village_desert_house"
 }
