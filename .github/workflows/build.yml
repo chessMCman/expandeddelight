@@ -7,7 +7,6 @@ on:
       - 'v*'
   pull_request:
     branches: [ main, master ]
-  # 加入下面这一行，GitHub 网页上就会出现 "Run workflow" 按钮
   workflow_dispatch:
     inputs:
       release_tag:
@@ -28,8 +27,9 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      # 升级到了 v5
       - name: Setup JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
@@ -43,7 +43,6 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build
 
-      # 情况 1：如果是通过 Push Tag 触发的自动发布
       - name: Upload to GitHub Release (Auto Tag Push)
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/v')
@@ -53,7 +52,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 情况 2：如果是通过网页手动点击触发，并且填了版本号，则发布 Release
       - name: Upload to GitHub Release (Manual Trigger)
         uses: softprops/action-gh-release@v2
         if: github.event_name == 'workflow_dispatch' && github.event.inputs.release_tag != ''
@@ -64,7 +62,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # 情况 3：作为编译产物供下载 (仅对非Tag触发的情况生效，比如PR或手动纯编译)
       - name: Upload Artifacts
         uses: actions/upload-artifact@v4
         if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
