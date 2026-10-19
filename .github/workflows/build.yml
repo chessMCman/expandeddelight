@@ -1,8 +1,5 @@
 name: Build and Release
 
-# 触发条件：
-# 1. 推送到 main/master 分支或提交 PR 时：只构建，不发布
-# 2. 推送以 v 开头的 tag（如 v1.0.0）时：构建并发布 Release
 on:
   push:
     branches: [ main, master ]
@@ -10,8 +7,14 @@ on:
       - 'v*'
   pull_request:
     branches: [ main, master ]
+  # 加入下面这一行，GitHub 网页上就会出现 "Run workflow" 按钮
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: '如果手动运行并希望发布Release，请输入版本号 (如 v1.0.0)，留空则只编译不发布'
+        required: false
+        default: ''
 
-# 必须赋予 contents: write 权限，否则无法创建 Release
 permissions:
   contents: write
 
@@ -40,19 +43,32 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew build
 
-      # 下面的步骤只有在推送 tag 时才会执行
-      - name: Upload to GitHub Release
+      # 情况 1：如果是通过 Push Tag 触发的自动发布
+      - name: Upload to GitHub Release (Auto Tag Push)
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/v')
         with:
-          # 上传 build/libs 目录下的所有 jar 文件
-          # 如果你只想上传特定文件，可以改成例如 build/libs/your-mod-1.0.0.jar
           files: build/libs/*.jar
-          # 自动生成 Release Notes（根据 commit 记录）
           generate_release_notes: true
-          # 如果是测试版可以设为 true
-          prerelease: false
-          # 设为 true 则是草稿状态，需要手动发布
-          draft: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 情况 2：如果是通过网页手动点击触发，并且填了版本号，则发布 Release
+      - name: Upload to GitHub Release (Manual Trigger)
+        uses: softprops/action-gh-release@v2
+        if: github.event_name == 'workflow_dispatch' && github.event.inputs.release_tag != ''
+        with:
+          tag_name: ${{ github.event.inputs.release_tag }}
+          files: build/libs/*.jar
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # 情况 3：作为编译产物供下载 (仅对非Tag触发的情况生效，比如PR或手动纯编译)
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        with:
+          name: Mod-Jars
+          path: build/libs/*.jar
+          retention-days: 7
