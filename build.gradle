@@ -23,9 +23,7 @@ repositories {
     maven { url = "https://maven.ryanliptak.com/" }
     maven { url = "https://api.modrinth.com/maven" }
 
-    //KubeJS
     maven {
-        // saps.dev Maven (KubeJS and Rhino)
         url = "https://maven.saps.dev/minecraft"
         content {
             includeGroup "dev.latvian.mods"
@@ -34,7 +32,6 @@ repositories {
     }
 
     maven {
-        // Shedaniel's maven (Architectury API)
         url = "https://maven.architectury.dev"
         content {
             includeGroup "dev.architectury"
@@ -122,13 +119,14 @@ configurations {
 }
 
 // =====================================================================
-// 【核心修复部分】使用 processResources 来处理 neoforge.mods.toml 的变量替换
+// 核心修复：直接从 src/main/resources 读取并替换变量
 // =====================================================================
 tasks.named('processResources', ProcessResources).configure {
     var replaceProperties = [
             minecraft_version      : minecraft_version,
             minecraft_version_range: minecraft_version_range,
             neo_version            : neo_version,
+            neo_version_range      : neo_version_range, // 必须在这里列出
             loader_version_range   : loader_version_range,
             mod_id                 : mod_id,
             mod_name               : mod_name,
@@ -139,7 +137,6 @@ tasks.named('processResources', ProcessResources).configure {
     ]
     inputs.properties replaceProperties
 
-    // 匹配资源目录下的文件进行替换
     filesMatching(['META-INF/neoforge.mods.toml', 'pack.mcmeta']) {
         expand replaceProperties + [project: project]
     }
