@@ -119,14 +119,14 @@ configurations {
 }
 
 // =====================================================================
-// 核心修复：直接从 src/main/resources 读取并替换变量
+// 核心修复：直接从 src/main/resources 读取并替换变量，已修复配置缓存报错
 // =====================================================================
 tasks.named('processResources', ProcessResources).configure {
     var replaceProperties = [
             minecraft_version      : minecraft_version,
             minecraft_version_range: minecraft_version_range,
             neo_version            : neo_version,
-            neo_version_range      : neo_version_range, // 必须在这里列出
+            neo_version_range      : neo_version_range, 
             loader_version_range   : loader_version_range,
             mod_id                 : mod_id,
             mod_name               : mod_name,
@@ -138,7 +138,8 @@ tasks.named('processResources', ProcessResources).configure {
     inputs.properties replaceProperties
 
     filesMatching(['META-INF/neoforge.mods.toml', 'pack.mcmeta']) {
-        expand replaceProperties + [project: project]
+        // 修复点：去掉了 + [project: project]
+        expand replaceProperties 
     }
 }
 // =====================================================================
